@@ -19,6 +19,12 @@ database.once("open", () => {
   console.log("mongo database connected");
 });
 
+const newUserSchema = new mongoose.Schema({
+  username: String,
+});
+
+const NewUser = mongoose.model("NewUser", newUserSchema);
+
 /**------------- </DATABASE> ----------------*/
 
 /**------------- <EXPRESS APP> ----------------*/
@@ -33,12 +39,35 @@ app.get("/", (req, res) => {
 });
 
 app.post("/api/users", function (req, res) {
-  const userName = req.body.username;
-  console.log(req.body);
-  res.json({
-    username: userName,
-    _id: "zde id z databáze",
+  console.log("req.body: ", req.body);
+
+  const newUser = new NewUser({
+    username: req.body.username,
   });
+  console.log("newUser: ", newUser);
+
+  newUser.save((error, data) => {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log(data, "DATA (new user) saved to database");
+    }
+  });
+
+  res.json({
+    username: newUser.username,
+    _id: newUser.id,
+  });
+});
+
+app.get("/api/users", function (req, res) {
+  let allUsers;
+  NewUser.find({}, function (err, docs) {
+    if (err) throw err;
+
+    allUsers = docs;
+  });
+  console.log(allUsers);
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {

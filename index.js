@@ -38,13 +38,13 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/views/index.html");
 });
 
-app.post("/api/users", function (req, res) {
-  console.log("req.body: ", req.body);
+//---------------POST AND GET /api/users ------------------//
 
+// VYTVOŘ NOVÉHO UŽIVATELE (ulož do databáze)
+app.post("/api/users", function (req, res) {
   const user = new User({
     username: req.body.username,
   });
-  console.log("User: ", user);
 
   user.save((error, data) => {
     if (error) {
@@ -54,12 +54,15 @@ app.post("/api/users", function (req, res) {
     }
   });
 
+  console.log(user);
+
   res.json({
     username: user.username,
     _id: user.id,
   });
 });
 
+// NAČTI VŠECHNY UŽIVATELE Z DATABÁZE
 app.get("/api/users", function (req, res) {
   const allUsers = new Promise((resolve, reject) => {
     resolve(User.find({}));
@@ -72,6 +75,39 @@ app.get("/api/users", function (req, res) {
     .catch((error) => {
       console.log(error);
     });
+});
+
+//---------------POST AND GET /api/users/:_id/exercises ------------------//
+
+// VYTVOŘ NOVÝ CVIK
+app.post("/api/users/:_id/exercises", function (req, res) {
+  console.log(req.body);
+  console.log(req.params);
+
+  //check if Object id is in database
+  var valid = mongoose.Types.ObjectId.isValid(req.params._id);
+  console.log(valid);
+
+  if (valid) {
+    const userId = new Promise((resolve, reject) => {
+      resolve(User.findById(req.params["_id"]));
+    });
+
+    userId
+      .then((result) => {
+        console.log(result);
+        res.json({
+          _id: result.id,
+          username: result.username,
+          date: new Date(),
+          duration: req.body.duration,
+          description: req.body.description,
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  } else res.send("TOTO ID UŽIVATELE NEEXISTUJE");
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {

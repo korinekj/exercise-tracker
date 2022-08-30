@@ -19,11 +19,11 @@ database.once("open", () => {
   console.log("mongo database connected");
 });
 
-const newUserSchema = new mongoose.Schema({
+const UserSchema = new mongoose.Schema({
   username: String,
 });
 
-const NewUser = mongoose.model("NewUser", newUserSchema);
+const User = mongoose.model("User", UserSchema);
 
 /**------------- </DATABASE> ----------------*/
 
@@ -41,12 +41,12 @@ app.get("/", (req, res) => {
 app.post("/api/users", function (req, res) {
   console.log("req.body: ", req.body);
 
-  const newUser = new NewUser({
+  const user = new User({
     username: req.body.username,
   });
-  console.log("newUser: ", newUser);
+  console.log("User: ", user);
 
-  newUser.save((error, data) => {
+  user.save((error, data) => {
     if (error) {
       console.log(error);
     } else {
@@ -55,19 +55,23 @@ app.post("/api/users", function (req, res) {
   });
 
   res.json({
-    username: newUser.username,
-    _id: newUser.id,
+    username: user.username,
+    _id: user.id,
   });
 });
 
 app.get("/api/users", function (req, res) {
-  let allUsers;
-  NewUser.find({}, function (err, docs) {
-    if (err) throw err;
-
-    allUsers = docs;
+  const allUsers = new Promise((resolve, reject) => {
+    resolve(User.find({}));
   });
-  console.log(allUsers);
+
+  allUsers
+    .then((result) => {
+      res.send(result);
+    })
+    .catch((error) => {
+      console.log(error);
+    });
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {

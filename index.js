@@ -20,10 +20,20 @@ database.once("open", () => {
 });
 
 const UserSchema = new mongoose.Schema({
-  username: String,
+  _id: mongoose.Types.ObjectId,
+  username: { type: String, required: true },
 });
 
 const User = mongoose.model("User", UserSchema);
+
+const ExerciseSchema = new mongoose.Schema({
+  username: { type: String, required: true },
+  description: { type: String, required: true },
+  duration: { type: Number, required: true },
+  date: String,
+});
+
+const Exercise = mongoose.model("Exercise", ExerciseSchema);
 
 /**------------- </DATABASE> ----------------*/
 
@@ -43,6 +53,7 @@ app.get("/", (req, res) => {
 // VYTVOŘ NOVÉHO UŽIVATELE (ulož do databáze)
 app.post("/api/users", function (req, res) {
   const user = new User({
+    _id: new mongoose.Types.ObjectId(),
     username: req.body.username,
   });
 
@@ -63,46 +74,86 @@ app.post("/api/users", function (req, res) {
 });
 
 // NAČTI VŠECHNY UŽIVATELE Z DATABÁZE
-app.get("/api/users", function (req, res) {
-  const allUsers = new Promise((resolve, reject) => {
-    resolve(User.find({}));
-  });
+app.get("/api/users", async function (req, res) {
+  //---------POMOCÍ PROMISE-----------//
+  // const allUsers = new Promise((resolve, reject) => {
+  //   resolve(User.find({}));
+  // });
+  // allUsers
+  //   .then((result) => {
+  //     res.send(result);
+  //   })
+  //   .catch((error) => {
+  //     console.log(error);
+  //   });
 
-  allUsers
-    .then((result) => {
-      res.send(result);
-    })
-    .catch((error) => {
-      console.log(error);
-    });
+  //ZKRÁCENÝ POMOCÍ ASYNC FUNCTION/AWAIT
+  const allUsers = await User.find({});
+
+  res.send(allUsers);
 });
 
 //---------------POST AND GET /api/users/:_id/exercises ------------------//
 
 // VYTVOŘ NOVÝ CVIK
-app.post("/api/users/:_id/exercises", function (req, res) {
-  console.log(req.body);
-  console.log(req.params);
-
+app.post("/api/users/:_id/exercises", async function (req, res) {
   //check if Object id is in database
-  var valid = mongoose.Types.ObjectId.isValid(req.params._id);
-  console.log(valid);
+  var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
+  console.log(validObjectId);
 
-  if (valid) {
+  if (validObjectId) {
+    //ověření datumu
+    if (req.body.date === "") {
+      req.body.date = new Date().toDateString();
+    } else {
+      req.body.date = new Date(req.body.date).toDateString();
+    }
+
+    const isExistingUser = await User.exists({ _id: req.params._id });
+    console.log("user exists: ", isExistingUser);
+
     const userId = new Promise((resolve, reject) => {
-      resolve(User.findById(req.params["_id"]));
+      resolve(User.findById(req.params._id));
     });
 
     userId
       .then((result) => {
-        console.log(result);
-        res.json({
-          _id: result.id,
+        const exercise = new Exercise({
           username: result.username,
-          date: new Date(),
-          duration: req.body.duration,
           description: req.body.description,
+          duration: req.body.duration,
+          date: req.body.date,
         });
+
+        exercise.save((error, exercise) => {
+          if (error) {
+            console.log(error);
+          } else {
+            console.log(exercise + "EXERCISE SAVED TO DATABASE");
+          }
+        });
+
+        let userObj = Object.assign({}, result.toObject());
+        delete userObj.__v;
+
+        let exerciseObj = {
+          date: exercise.date,
+          duration: exercise.duration,
+          description: exercise.description,
+        };
+
+        let final = Object.assign(userObj, exerciseObj);
+
+        res.send(final);
+
+        //také správná odpověď
+        // res.json({
+        //   _id: result.id,
+        //   username: result.username,
+        //   date: exercise.date,
+        //   duration: exercise.duration,
+        //   description: exercise.description,
+        // });
       })
       .catch((error) => {
         console.log(error);

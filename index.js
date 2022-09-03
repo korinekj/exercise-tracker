@@ -48,8 +48,6 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/views/index.html");
 });
 
-//---------------POST AND GET /api/users ------------------//
-
 // VYTVOŘ NOVÉHO UŽIVATELE (ulož do databáze)
 app.post("/api/users", function (req, res) {
   const user = new User({
@@ -93,11 +91,9 @@ app.get("/api/users", async function (req, res) {
   res.send(allUsers);
 });
 
-//---------------POST AND GET /api/users/:_id/exercises ------------------//
-
 // VYTVOŘ NOVÝ CVIK
 app.post("/api/users/:_id/exercises", async function (req, res) {
-  //check if Object id is in database
+  //check if Object id is valid mongodb ObjectId
   var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
   console.log(validObjectId);
 
@@ -111,6 +107,11 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
     const isExistingUser = await User.exists({ _id: req.params._id });
     console.log("user exists: ", isExistingUser);
+
+    if (isExistingUser === null) {
+      res.send("TOTO ID UŽIVATELE NEEXISTUJE");
+      return;
+    }
 
     const userId = new Promise((resolve, reject) => {
       resolve(User.findById(req.params._id));
@@ -146,7 +147,7 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
         res.send(final);
 
-        //také správná odpověď
+        //také správná odpověď fcc test
         // res.json({
         //   _id: result.id,
         //   username: result.username,
@@ -158,7 +159,32 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
       .catch((error) => {
         console.log(error);
       });
-  } else res.send("TOTO ID UŽIVATELE NEEXISTUJE");
+  } else res.send("INVALID ID");
+});
+
+// NAČTI LOG CVIKŮ UŽIVATELE
+app.get("/api/users/:_id/logs", async function (req, res) {
+  var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
+  console.log(validObjectId);
+
+  if (validObjectId) {
+    const isExistingUser = await User.exists({ _id: req.params._id });
+    console.log("user exists: ", isExistingUser);
+
+    const userName = await User.findById(req.params._id);
+    console.log("username: ", userName);
+
+    const allUserExercises = await Exercise.find({
+      username: userName.username,
+    });
+    const userExerciseCount = allUserExercises.length;
+
+    res.json({
+      count: userExerciseCount,
+    });
+  } else {
+    res.send("INVALID ID");
+  }
 });
 
 const listener = app.listen(process.env.PORT || 3000, () => {

@@ -30,7 +30,7 @@ const ExerciseSchema = new mongoose.Schema({
   username: { type: String, required: true },
   description: { type: String, required: true },
   duration: { type: Number, required: true },
-  date: String,
+  date: Date,
 });
 
 const Exercise = mongoose.model("Exercise", ExerciseSchema);
@@ -63,8 +63,6 @@ app.post("/api/users", function (req, res) {
     }
   });
 
-  console.log(user);
-
   res.json({
     username: user.username,
     _id: user.id,
@@ -94,16 +92,29 @@ app.get("/api/users", async function (req, res) {
 // VYTVOŘ NOVÝ CVIK
 app.post("/api/users/:_id/exercises", async function (req, res) {
   //check if Object id is valid mongodb ObjectId
-  var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
+  const validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
   console.log(validObjectId);
+
+  const date = new Date(req.body.date);
+  console.log(date);
+
+  const validDate =
+    date &&
+    Object.prototype.toString.call(date) === "[object Date]" &&
+    !isNaN(date);
 
   if (validObjectId) {
     //ověření datumu
     if (req.body.date === "") {
-      req.body.date = new Date().toDateString();
+      req.body.date = new Date();
+    } else if (validDate) {
+      req.body.date = new Date(req.body.date);
     } else {
-      req.body.date = new Date(req.body.date).toDateString();
+      res.send("NEPLATNÝ FORMÁT DATUMU");
+      return;
     }
+
+    console.log(typeof req.body.date);
 
     const isExistingUser = await User.exists({ _id: req.params._id });
     console.log("user exists: ", isExistingUser);
@@ -137,8 +148,11 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
         let userObj = Object.assign({}, result.toObject());
         delete userObj.__v;
 
+        let dateString = req.body.date.toDateString();
+        console.log("dateString: ", dateString, typeof dateString);
+
         let exerciseObj = {
-          date: exercise.date,
+          date: dateString,
           duration: exercise.duration,
           description: exercise.description,
         };
@@ -147,11 +161,11 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
         res.send(final);
 
-        //také správná odpověď fcc test
+        // //také správná odpověď fcc test
         // res.json({
         //   _id: result.id,
         //   username: result.username,
-        //   date: exercise.date,
+        //   date: exercise.date.toDateString(),
         //   duration: exercise.duration,
         //   description: exercise.description,
         // });
@@ -165,22 +179,50 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 // NAČTI LOG CVIKŮ UŽIVATELE
 app.get("/api/users/:_id/logs", async function (req, res) {
   var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
-  console.log(validObjectId);
+  console.log("IS Valid Object ID: ", validObjectId);
 
   if (validObjectId) {
     const isExistingUser = await User.exists({ _id: req.params._id });
     console.log("user exists: ", isExistingUser);
 
-    const userName = await User.findById(req.params._id);
-    console.log("username: ", userName);
+    if (isExistingUser === null) {
+      res.send("TOTO ID UŽIVATELE NEEXISTUJE");
+      return;
+    }
+
+    const user = await User.findById(req.params._id);
+    console.log("User: ", user);
+
+    const userName = user.username;
 
     const allUserExercises = await Exercise.find({
-      username: userName.username,
+      username: userName,
     });
+    console.log("exercises", allUserExercises);
+
     const userExerciseCount = allUserExercises.length;
+    console.log("Exercise Count: ", userExerciseCount);
+
+    const logExercises = allUserExercises.map((exercise) => {
+      return {
+        description: exercise.description,
+        duration: exercise.duration,
+        date: exercise.date.toDateString(),
+      };
+    });
+
+    // zkrácený zápis kódu hore -> pokročilý kód...zřejmě použití Destructuring object??
+    // let logExercises = allUserExercises.map(
+    //   ({ description, duration, date }) => {
+    //     return { description, duration, date };
+    //   }
+    // );
 
     res.json({
+      username: user.username,
       count: userExerciseCount,
+      _id: req.params._id,
+      log: logExercises,
     });
   } else {
     res.send("INVALID ID");

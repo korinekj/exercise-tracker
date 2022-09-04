@@ -32,13 +32,7 @@
         <p>
           <code>POST /api/users</code>
         </p>
-        <input
-          id="uname"
-          type="text"
-          name="username"
-          placeholder="username"
-          required
-        />
+        <input id="uname" type="text" name="username" placeholder="username" />
         <input type="submit" value="Submit" />
       </form>
       <form id="exercise-form" method="post">
@@ -46,13 +40,12 @@
         <p>
           <code>POST /api/users/:_id/exercises</code>
         </p>
-        <input id="uid" type="text" name=":_id" placeholder=":_id" required />
+        <input id="uid" type="text" name=":_id" placeholder=":_id" />
         <input
           id="desc"
           type="text"
           name="description"
           placeholder="description*"
-          required
         />
 
         <input
@@ -60,7 +53,6 @@
           type="text"
           name="duration"
           placeholder="duration* (mins.)"
-          required
         />
         <input
           id="date"

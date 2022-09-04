@@ -27,10 +27,11 @@ const UserSchema = new mongoose.Schema({
 const User = mongoose.model("User", UserSchema);
 
 const ExerciseSchema = new mongoose.Schema({
+  userId: mongoose.Schema.Types.ObjectId,
   username: { type: String, required: true },
   description: { type: String, required: true },
   duration: { type: Number, required: true },
-  date: Date,
+  date: { type: Date },
 });
 
 const Exercise = mongoose.model("Exercise", ExerciseSchema);
@@ -130,7 +131,9 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
     userId
       .then((result) => {
+        console.log(result);
         const exercise = new Exercise({
+          userId: req.params._id,
           username: result.username,
           description: req.body.description,
           duration: req.body.duration,
@@ -178,6 +181,10 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
 // NAČTI LOG CVIKŮ UŽIVATELE
 app.get("/api/users/:_id/logs", async function (req, res) {
+  console.log(`req.body: ${JSON.stringify(req.body)}`);
+  console.log(`req.params: ${JSON.stringify(req.params)}`);
+  console.log(`req.query: ${JSON.stringify(req.query)}`);
+
   var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
   console.log("IS Valid Object ID: ", validObjectId);
 
@@ -193,22 +200,29 @@ app.get("/api/users/:_id/logs", async function (req, res) {
     const user = await User.findById(req.params._id);
     console.log("User: ", user);
 
-    const userName = user.username;
-
     const allUserExercises = await Exercise.find({
-      username: userName,
+      userId: req.params._id,
     });
     console.log("exercises", allUserExercises);
 
     const userExerciseCount = allUserExercises.length;
-    console.log("Exercise Count: ", userExerciseCount);
+    console.log("Exercise Count: ", typeof userExerciseCount);
+
+    console.log("MY JSON RESPONSE:", { count: allUserExercises.length });
 
     const logExercises = allUserExercises.map((exercise) => {
+      console.log("TYPEOF: ", exercise);
       return {
         description: exercise.description,
         duration: exercise.duration,
         date: exercise.date.toDateString(),
       };
+    });
+
+    res.json({
+      count: userExerciseCount,
+
+      log: logExercises,
     });
 
     // zkrácený zápis kódu hore -> pokročilý kód...zřejmě použití Destructuring object??
@@ -217,13 +231,6 @@ app.get("/api/users/:_id/logs", async function (req, res) {
     //     return { description, duration, date };
     //   }
     // );
-
-    res.json({
-      username: user.username,
-      count: userExerciseCount,
-      _id: req.params._id,
-      log: logExercises,
-    });
   } else {
     res.send("INVALID ID");
   }

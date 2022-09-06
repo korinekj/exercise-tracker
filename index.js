@@ -197,21 +197,67 @@ app.get("/api/users/:_id/logs", async function (req, res) {
       return;
     }
 
+    let queryString;
+
+    if (Object.keys(req.query).length === 0) {
+      console.log("NO QUERY STRING");
+    } else {
+      queryString = req.query;
+    }
+    console.log("QUERY STRING: ", queryString);
+
     const user = await User.findById(req.params._id);
     console.log("User: ", user);
 
-    const allUserExercises = await Exercise.find({
-      userId: req.params._id,
-    });
-    console.log("exercises", allUserExercises);
+    let query;
+
+    if (queryString === undefined) {
+      query = {
+        userId: user._id,
+      };
+    } else if (queryString.from !== undefined && queryString.to !== undefined) {
+      query = {
+        userId: user._id,
+        date: {
+          $gte: queryString.from === "" ? "50" : queryString.from,
+          $lte: queryString.to === "" ? "9999" : queryString.to,
+        },
+      };
+    } else if (queryString.from !== undefined && queryString.to === undefined) {
+      query = {
+        userId: user._id,
+        date: { $gte: queryString.from === "" ? "50" : queryString.from },
+      };
+    } else if (queryString.from === undefined && queryString.to !== undefined) {
+      query = {
+        userId: user._id,
+        date: { $lte: queryString.to === "" ? "9999" : queryString.to },
+      };
+    } else if (queryString.from === undefined && queryString.to === undefined) {
+      query = {
+        userId: user._id,
+      };
+    }
+    console.log("QUERY: ", query);
+
+    let allUserExercises;
+    if (req.query.limit === undefined) {
+      allUserExercises = await Exercise.find(query);
+    } else {
+      allUserExercises = await Exercise.find(query).limit(
+        parseInt(req.query.limit)
+      );
+    }
+
+    //console.log("exercises", allUserExercises);
 
     const userExerciseCount = allUserExercises.length;
-    console.log("Exercise Count: ", typeof userExerciseCount);
+    //console.log("Exercise Count: ", typeof userExerciseCount);
 
-    console.log("MY JSON RESPONSE:", { count: allUserExercises.length });
+    //console.log("MY JSON RESPONSE:", { count: allUserExercises.length });
 
     const logExercises = allUserExercises.map((exercise) => {
-      console.log("TYPEOF: ", exercise);
+      //console.log("TYPEOF: ", exercise);
       return {
         description: exercise.description,
         duration: exercise.duration,
@@ -219,12 +265,27 @@ app.get("/api/users/:_id/logs", async function (req, res) {
       };
     });
 
-    res.json({
-      count: userExerciseCount,
+    if (queryString === undefined) {
+      res.json({
+        count: userExerciseCount,
+        username: user.username,
+        id: user._id,
+        log: logExercises,
+      });
+    } else {
+      res.json({
+        from: new Date(queryString.from).toDateString(),
+        to: new Date(queryString.to).toDateString(),
+        count: userExerciseCount,
+        username: user.username,
+        id: user._id,
+        log: logExercises,
+      });
+    }
 
-      log: logExercises,
-    });
-
+    // res.json({
+    //   test: req.query,
+    // });
     // zkrácený zápis kódu hore -> pokročilý kód...zřejmě použití Destructuring object??
     // let logExercises = allUserExercises.map(
     //   ({ description, duration, date }) => {

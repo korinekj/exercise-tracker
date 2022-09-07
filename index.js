@@ -92,12 +92,14 @@ app.get("/api/users", async function (req, res) {
 
 // VYTVOŘ NOVÝ CVIK
 app.post("/api/users/:_id/exercises", async function (req, res) {
+  console.log(`req.body: ${JSON.stringify(req.body)}`);
+  console.log(`req.params: ${JSON.stringify(req.params)}`);
+  console.log(`req.query: ${JSON.stringify(req.query)}`);
+
   //check if Object id is valid mongodb ObjectId
   const validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
-  console.log(validObjectId);
 
   const date = new Date(req.body.date);
-  console.log(date);
 
   const validDate =
     date &&
@@ -108,6 +110,8 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
     //ověření datumu
     if (req.body.date === "") {
       req.body.date = new Date();
+    } else if (req.body.date === undefined || req.body.date === null) {
+      req.body.date = new Date();
     } else if (validDate) {
       req.body.date = new Date(req.body.date);
     } else {
@@ -115,10 +119,7 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
       return;
     }
 
-    console.log(typeof req.body.date);
-
     const isExistingUser = await User.exists({ _id: req.params._id });
-    console.log("user exists: ", isExistingUser);
 
     if (isExistingUser === null) {
       res.send("TOTO ID UŽIVATELE NEEXISTUJE");
@@ -131,7 +132,6 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
     userId
       .then((result) => {
-        console.log(result);
         const exercise = new Exercise({
           userId: req.params._id,
           username: result.username,
@@ -152,7 +152,6 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
         delete userObj.__v;
 
         let dateString = req.body.date.toDateString();
-        console.log("dateString: ", dateString, typeof dateString);
 
         let exerciseObj = {
           date: dateString,
@@ -162,6 +161,7 @@ app.post("/api/users/:_id/exercises", async function (req, res) {
 
         let final = Object.assign(userObj, exerciseObj);
 
+        console.log("FINAL RESPONSE: ", final);
         res.send(final);
 
         // //také správná odpověď fcc test
@@ -185,7 +185,7 @@ app.get("/api/users/:_id/logs", async function (req, res) {
   console.log(`req.params: ${JSON.stringify(req.params)}`);
   console.log(`req.query: ${JSON.stringify(req.query)}`);
 
-  var validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
+  const validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
   console.log("IS Valid Object ID: ", validObjectId);
 
   if (validObjectId) {
@@ -265,23 +265,28 @@ app.get("/api/users/:_id/logs", async function (req, res) {
       };
     });
 
+    let response;
+
     if (queryString === undefined) {
-      res.json({
+      response = {
         count: userExerciseCount,
         username: user.username,
         id: user._id,
         log: logExercises,
-      });
+      };
     } else {
-      res.json({
+      response = {
         from: new Date(queryString.from).toDateString(),
         to: new Date(queryString.to).toDateString(),
         count: userExerciseCount,
         username: user.username,
         id: user._id,
         log: logExercises,
-      });
+      };
     }
+
+    console.log("LOG RESPONSE:", response);
+    res.json(response);
 
     // res.json({
     //   test: req.query,

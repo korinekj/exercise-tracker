@@ -8,4 +8,4 @@ const ExerciseSchema = new mongoose.Schema({
   date: { type: Date },
 });
 
-const Exercise = mongoose.model("Exercise", ExerciseSchema);
+module.exports = mongoose.model("Exercise", ExerciseSchema);

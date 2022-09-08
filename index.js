@@ -4,6 +4,8 @@ const app = express();
 const cors = require("cors");
 const mongoose = require("mongoose");
 
+const indexRouter = require("./controllers/index");
+
 /**------------- <DATABASE> ----------------*/
 
 //connect to database
@@ -19,35 +21,17 @@ database.once("open", () => {
   console.log("mongo database connected");
 });
 
-const UserSchema = new mongoose.Schema({
-  _id: mongoose.Types.ObjectId,
-  username: { type: String, required: true },
-});
-
-const User = mongoose.model("User", UserSchema);
-
-const ExerciseSchema = new mongoose.Schema({
-  userId: mongoose.Schema.Types.ObjectId,
-  username: { type: String, required: true },
-  description: { type: String, required: true },
-  duration: { type: Number, required: true },
-  date: { type: Date },
-});
-
-const Exercise = mongoose.model("Exercise", ExerciseSchema);
-
 /**------------- </DATABASE> ----------------*/
 
 /**------------- <EXPRESS APP> ----------------*/
 
-app.use(cors());
+app.set("view engine", "ejs");
+app.set("views", __dirname + "/views");
 app.use(express.static("public"));
-
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/", (req, res) => {
-  res.sendFile(__dirname + "/views/index.html");
-});
+app.use("/", indexRouter);
 
 // VYTVOŘ NOVÉHO UŽIVATELE (ulož do databáze)
 app.post("/api/users", function (req, res) {

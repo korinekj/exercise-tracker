@@ -24,8 +24,6 @@ database.once("open", () => {
 
 /**------------- </DATABASE> ----------------*/
 
-/**------------- <EXPRESS APP> ----------------*/
-
 app.set("view engine", "ejs");
 app.set("views", __dirname + "/views");
 app.use(express.static("public"));

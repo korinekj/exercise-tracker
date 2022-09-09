@@ -30,6 +30,11 @@ router.post("/", function (req, res) {
 
 // NAČTI VŠECHNY UŽIVATELE Z DATABÁZE
 router.get("/", async function (req, res) {
+  //ZKRÁCENÝ POMOCÍ ASYNC/AWAIT
+  const allUsers = await User.find({});
+
+  res.send(allUsers);
+
   //---------POMOCÍ PROMISE-----------//
   // const allUsers = new Promise((resolve, reject) => {
   //   resolve(User.find({}));
@@ -41,11 +46,6 @@ router.get("/", async function (req, res) {
   //   .catch((error) => {
   //     console.log(error);
   //   });
-
-  //ZKRÁCENÝ POMOCÍ ASYNC FUNCTION/AWAIT
-  const allUsers = await User.find({});
-
-  res.send(allUsers);
 });
 
 // VYTVOŘ NOVÝ CVIK
@@ -119,17 +119,7 @@ router.post("/:_id/exercises", async function (req, res) {
 
         let final = Object.assign(userObj, exerciseObj);
 
-        console.log("FINAL RESPONSE: ", final);
         res.send(final);
-
-        // //také správná odpověď fcc test
-        // res.json({
-        //   _id: result.id,
-        //   username: result.username,
-        //   date: exercise.date.toDateString(),
-        //   duration: exercise.duration,
-        //   description: exercise.description,
-        // });
       })
       .catch((error) => {
         console.log(error);
@@ -144,11 +134,9 @@ router.get("/:_id/logs", async function (req, res) {
   console.log(`req.query: ${JSON.stringify(req.query)}`);
 
   const validObjectId = mongoose.Types.ObjectId.isValid(req.params._id);
-  console.log("IS Valid Object ID: ", validObjectId);
 
   if (validObjectId) {
     const isExistingUser = await User.exists({ _id: req.params._id });
-    console.log("user exists: ", isExistingUser);
 
     if (isExistingUser === null) {
       res.send("TOTO ID UŽIVATELE NEEXISTUJE");
@@ -158,14 +146,11 @@ router.get("/:_id/logs", async function (req, res) {
     let queryString;
 
     if (Object.keys(req.query).length === 0) {
-      console.log("NO QUERY STRING");
     } else {
       queryString = req.query;
     }
-    console.log("QUERY STRING: ", queryString);
 
     const user = await User.findById(req.params._id);
-    console.log("User: ", user);
 
     let query;
 
@@ -196,9 +181,9 @@ router.get("/:_id/logs", async function (req, res) {
         userId: user._id,
       };
     }
-    console.log("QUERY: ", query);
 
     let allUserExercises;
+
     if (req.query.limit === undefined) {
       allUserExercises = await Exercise.find(query);
     } else {
@@ -207,21 +192,21 @@ router.get("/:_id/logs", async function (req, res) {
       );
     }
 
-    //console.log("exercises", allUserExercises);
-
     const userExerciseCount = allUserExercises.length;
-    //console.log("Exercise Count: ", typeof userExerciseCount);
-
-    //console.log("MY JSON RESPONSE:", { count: allUserExercises.length });
 
     const logExercises = allUserExercises.map((exercise) => {
-      //console.log("TYPEOF: ", exercise);
       return {
         description: exercise.description,
         duration: exercise.duration,
         date: exercise.date.toDateString(),
       };
     });
+    // zkrácený zápis kódu hore -> pokročilý kód...zřejmě použití Destructuring object??
+    // let logExercises = allUserExercises.map(
+    //   ({ description, duration, date }) => {
+    //     return { description, duration, date };
+    //   }
+    // );
 
     let response;
 
@@ -243,18 +228,7 @@ router.get("/:_id/logs", async function (req, res) {
       };
     }
 
-    console.log("LOG RESPONSE:", response);
     res.json(response);
-
-    // res.json({
-    //   test: req.query,
-    // });
-    // zkrácený zápis kódu hore -> pokročilý kód...zřejmě použití Destructuring object??
-    // let logExercises = allUserExercises.map(
-    //   ({ description, duration, date }) => {
-    //     return { description, duration, date };
-    //   }
-    // );
   } else {
     res.send("INVALID ID");
   }
